@@ -2,3 +2,4 @@ transformers
 tensorflow
 tf-keras
 pandas
+hypernetx

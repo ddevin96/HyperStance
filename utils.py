@@ -1,12 +1,24 @@
 import os
 import pickle
 import pandas as pd
+import hypernetx as hnx
 
 ### get_embeddings("Hello, my dog is cute", tokenizer, model)
 def get_embeddings(text, tokenizer, model):
     encoded_input = tokenizer(text, truncation=True, max_length=512, return_tensors='tf')
     output_embeddings = model(encoded_input)
     return output_embeddings.pooler_output
+
+### generate file of adjacency matrix from hypergraph file
+def hgToAdjMatrix(inputFile, outputFile):
+    l = []
+    with open(inputFile, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            l.append(set(map(int, line.split(','))))
+    H = hnx.Hypergraph(l)
+    with open(outputFile, 'wb') as f:
+        pickle.dump(H.adjacency_matrix(), f, pickle.HIGHEST_PROTOCOL)
 
 ### create 
 ### * id_map.csv - mapping of unique id to original id
@@ -59,4 +71,5 @@ def create_files(input_folder, output_folder, tokenizer, model):
                             f.write('\n')
                         else:
                             f.write(str(group['id_num'].values[0]) + '\n')
-            break
+
+            hgToAdjMatrix(out + "/hg.hgf", out + "/adjacency.pkl")
