@@ -1,5 +1,7 @@
 import warnings
 warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 from transformers import logging
 logging.set_verbosity_error()
 
