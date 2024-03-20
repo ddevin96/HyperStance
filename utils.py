@@ -10,6 +10,7 @@ def get_embeddings(text, tokenizer, model):
     return output_embeddings.pooler_output
 
 ### generate file of adjacency matrix from hypergraph file
+### hgToAdjMatrix("data/processed/climateskeptics/hg.hgf", "data/processed/climateskeptics/adj.pkl")
 def hgToAdjMatrix(inputFile, outputFile):
     l = []
     with open(inputFile, 'r') as f:
@@ -20,11 +21,12 @@ def hgToAdjMatrix(inputFile, outputFile):
     with open(outputFile, 'wb') as f:
         pickle.dump(H.adjacency_matrix(), f, pickle.HIGHEST_PROTOCOL)
 
-### create 
+### create files for the architecture
 ### * id_map.csv - mapping of unique id to original id
 ### * textembs.pkl - array of text embeddings
 ### * hg.hgf - hypergraph file
 ### * hg.edgelabel - edge labels | the label is the link_id
+### * adjacency.pkl - adjacency matrix
 def create_files(input_folder, output_folder, tokenizer, model):
     for file in os.listdir(input_folder):
         file = file.split(".")[0]
@@ -34,7 +36,7 @@ def create_files(input_folder, output_folder, tokenizer, model):
             
             out = output_folder + "/" + filename
             if not os.path.exists(out):
-                print(f"Creating dataset for {filename}")
+                print(f"\n\nCreating dataset for {filename}")
                 os.makedirs(out)
             else:
                 # if folder already exists, we don't want to overwrite it
@@ -42,6 +44,12 @@ def create_files(input_folder, output_folder, tokenizer, model):
                 continue
 
             data = pd.read_csv(input_folder + "/" + file + ".csv")
+
+            # if dataset is empty, we don't want to create the files
+            if data.empty:
+                print(f"Empty dataset for {filename} - skipping dataset")
+                continue
+
             data = data.dropna()
             data = data[data.author != "AutoModerator"]
             # assign unique id to each message
@@ -52,8 +60,9 @@ def create_files(input_folder, output_folder, tokenizer, model):
             text_embs = []
             sorted_data_by_id_num = data.sort_values(by='id_num')
             l = len(sorted_data_by_id_num)
+            l_tenth = l // 10
             for index, row in sorted_data_by_id_num.iterrows():
-                if index == 0 or index % 10 == 0:
+                if index == 0 or index % l_tenth == 0:
                     print(f"Processing {index}/{l}")
                 text_embs.append(get_embeddings(row['body'], tokenizer, model))
             with open(out + '/textembs.pkl', 'wb') as f:
@@ -72,4 +81,28 @@ def create_files(input_folder, output_folder, tokenizer, model):
                         else:
                             f.write(str(group['id_num'].values[0]) + '\n')
 
+            # create adjacency matrix from hypergraph file
             hgToAdjMatrix(out + "/hg.hgf", out + "/adjacency.pkl")
+            print("-------------------\n")
+    remove_empty_folders(output_folder)
+
+### remove empty folders from a directory in a recursive way
+def remove_empty_folders(path):
+    if not os.path.isdir(path):
+        return
+
+    # remove empty subfolders
+    files = os.listdir(path)
+    if len(files):
+        for f in files:
+            fullpath = os.path.join(path, f)
+            if os.path.isdir(fullpath):
+                remove_empty_folders(fullpath)
+
+    # if folder empty, delete it
+    files = os.listdir(path)
+    if len(files) == 0:
+        print(f"Removing empty folder: {path}")
+        i = input("Insert y to confirm:")
+        if i == 'y':
+            os.rmdir(path)
