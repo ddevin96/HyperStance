@@ -19,7 +19,7 @@ def hgToAdjMatrix(inputFile, outputFile):
             l.append(set(map(int, line.split(','))))
     H = hnx.Hypergraph(l)
     with open(outputFile, 'wb') as f:
-        pickle.dump(H.adjacency_matrix(), f, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(H.incidence_matrix(), f, pickle.HIGHEST_PROTOCOL)
 
 ### create files for the architecture
 ### * id_map.csv - mapping of unique id to original id
