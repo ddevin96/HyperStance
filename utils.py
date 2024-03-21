@@ -10,8 +10,8 @@ def get_embeddings(text, tokenizer, model):
     return output_embeddings.pooler_output
 
 ### generate file of adjacency matrix from hypergraph file
-### hgToAdjMatrix("data/processed/climateskeptics/hg.hgf", "data/processed/climateskeptics/adj.pkl")
-def hgToAdjMatrix(inputFile, outputFile):
+### hgToIncidenceMatrix("data/processed/dataset/hg.hgf", "data/processed/dataset/adj.pkl")
+def hgToIncidenceMatrix(inputFile, outputFile):
     l = []
     with open(inputFile, 'r') as f:
         lines = f.readlines()
@@ -19,7 +19,7 @@ def hgToAdjMatrix(inputFile, outputFile):
             l.append(set(map(int, line.split(','))))
     H = hnx.Hypergraph(l)
     with open(outputFile, 'wb') as f:
-        pickle.dump(H.incidence_matrix(), f, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(H.incidence_matrix().toarray(), f, pickle.HIGHEST_PROTOCOL)
 
 ### create files for the architecture
 ### * id_map.csv - mapping of unique id to original id
@@ -82,7 +82,7 @@ def create_files(input_folder, output_folder, tokenizer, model):
                             f.write(str(group['id_num'].values[0]) + '\n')
 
             # create adjacency matrix from hypergraph file
-            hgToAdjMatrix(out + "/hg.hgf", out + "/adjacency.pkl")
+            hgToIncidenceMatrix(out + "/hg.hgf", out + "/adjacency.pkl")
             print("-------------------\n")
     remove_empty_folders(output_folder)
 
@@ -102,7 +102,5 @@ def remove_empty_folders(path):
     # if folder empty, delete it
     files = os.listdir(path)
     if len(files) == 0:
-        print(f"Removing empty folder: {path}")
-        i = input("Insert y to confirm:")
-        if i == 'y':
-            os.rmdir(path)
+        print(f"Removing empty folder: {path}")        
+        os.rmdir(path)    
