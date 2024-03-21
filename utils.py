@@ -82,7 +82,7 @@ def create_files(input_folder, output_folder, tokenizer, model):
                             f.write(str(group['id_num'].values[0]) + '\n')
 
             # create adjacency matrix from hypergraph file
-            hgToIncidenceMatrix(out + "/hg.hgf", out + "/adjacency.pkl")
+            hgToIncidenceMatrix(out + "/hg.hgf", out + "/matrix.pkl")
             print("-------------------\n")
     remove_empty_folders(output_folder)
 
@@ -103,4 +103,13 @@ def remove_empty_folders(path):
     files = os.listdir(path)
     if len(files) == 0:
         print(f"Removing empty folder: {path}")        
-        os.rmdir(path)    
+        os.rmdir(path)
+
+## change name of a file in each subfolder
+def change_name(folder, old_name, new_name):
+    for subfolder in os.listdir(folder):
+        if os.path.isdir(folder + "/" + subfolder):
+            for file in os.listdir(folder + "/" + subfolder):
+                if file.endswith(old_name):
+                    os.rename(folder + "/" + subfolder + "/" + file, folder + "/" + subfolder + new_name)
+                    print(f"Renamed {file} to {new_name} in {subfolder}")    

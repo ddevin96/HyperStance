@@ -15,7 +15,7 @@ num_nodes = X_n.shape[0]
 # incidence_matrix = (torch.rand((num_nodes, 41)) > 0.5).type(torch.float32)
 # edge_index = incidence_matrix.nonzero().t().contiguous()
 
-with open("data/processed/AntiVegan/mat.pkl", "rb") as f:
+with open("data/processed/AntiVegan/matrix.pkl", "rb") as f:
     incidence_matrix = pickle.load(f)
 
 incidence_matrix = torch.tensor(incidence_matrix)
