@@ -28,6 +28,10 @@ def hgToIncidenceMatrix(inputFile, outputFile):
 ### * hg.edgelabel - edge labels | the label is the link_id
 ### * adjacency.pkl - adjacency matrix
 def create_files(input_folder, output_folder, tokenizer, model):
+    spinos = pd.read_pickle('data/spinos/SPINOS_official_dataset.pkl')
+    spinos['index'] = spinos.index
+    annotations = ['stance_not_inferrable', 'favor', 'undecided', 's_favor', 'against', 's_against'] # [0, 1, 2, 3, 4, 5] | -1 if not present
+
     for file in os.listdir(input_folder):
         file = file.split(".")[0]
         # ignoring submission - comments only
@@ -52,9 +56,12 @@ def create_files(input_folder, output_folder, tokenizer, model):
 
             data = data.dropna()
             data = data[data.author != "AutoModerator"]
-            # assign unique id to each message
+            # assign unique id to each message and set label_id
             data['id_num'] = data['id'].astype('category').cat.codes
-            data[['id_num', 'id']].drop_duplicates().to_csv(out + '/id_map.csv', index=False)
+            data['label'] = data['id'].map(spinos['annotation']).fillna(-1).astype(str)
+            data['label_id'] = data['label'].apply(lambda x: annotations.index(x) if x in annotations else -1)
+            data = data.drop(columns=['label'])
+            data[['id_num', 'id', 'label_id']].drop_duplicates().to_csv(out + '/id_map.csv', index=False)
             
             # array of text embeddings sorted by id_num
             text_embs = []
@@ -113,3 +120,20 @@ def change_name(folder, old_name, new_name):
                 if file.endswith(old_name):
                     os.rename(folder + "/" + subfolder + "/" + file, folder + "/" + subfolder + new_name)
                     print(f"Renamed {file} to {new_name} in {subfolder}")    
+
+### change id_map with associated labels from spinos
+### if id is present in spinos, label_id is set to the index of the label in annotations from 0 to 5
+### otherwise, label_id is set to -1 
+def change_labels():
+    data = pd.read_pickle('data/spinos/SPINOS_official_dataset.pkl')
+    data['index'] = data.index
+    annotations = ['stance_not_inferrable', 'favor', 'undecided', 's_favor', 'against', 's_against'] # [0, 1, 2, 3, 4, 5]
+    for subfolder in os.listdir("data/processed"):
+            if os.path.isdir("data/processed" + "/" + subfolder):
+                for file in os.listdir("data/processed" + "/" + subfolder):
+                    if file == "id_map.csv":
+                        id_map = pd.read_csv('data/processed/' + subfolder + '/id_map.csv')
+                        id_map['label'] = id_map['id'].map(data['annotation']).fillna(-1).astype(str)
+                        id_map['label_id'] = id_map['label'].apply(lambda x: annotations.index(x) if x in annotations else -1)
+                        id_map = id_map.drop(columns=['label'])
+                        id_map.to_csv('data/processed/' + subfolder + '/id_map.csv', index=False)
