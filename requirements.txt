@@ -5,3 +5,4 @@ pandas
 hypernetx
 torch==2.2.1
 torch_geometric==2.5.1
+scikit-learn==1.4.1.post1

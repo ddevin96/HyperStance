@@ -10,6 +10,6 @@ class Model(nn.Module):
     
     def forward(self, X, edge_index):
         y = self.hypergraph_conv_1(X, edge_index)
-        y = torch.nn.functional.softmax(y)
+        y = nn.functional.softmax(y, dim=1)
         return y
     
