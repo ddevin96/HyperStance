@@ -1,6 +1,5 @@
-import warnings
-# warnings.filterwarnings("ignore", category=NotOpenSSLWarning)
-
+# import warnings
+# warnings.filterwarnings("ignore")
 import torch
 from model import Model
 import numpy as np
@@ -23,6 +22,7 @@ num_nodes = X.shape[0]
 # edge_index = incidence_matrix.nonzero().t().contiguous()
 
 # matrix ordered by timestamp (e.g. 1,2,3,4,5 1 comes before 2, 2 comes before 3 etc )
+# already sorted by timestamp
 with open(f"data/processed/{dataset_name}/matrix.pkl", "rb") as f:
     incidence_matrix = pickle.load(f)
 
@@ -47,13 +47,14 @@ test_edge_index = im_test.nonzero().T.contiguous()
 
 model = Model(X.shape[1], y.shape[1])
 criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-epochs = 100
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=10e-6)
+epochs = 3000
 for epoch in range(1, epochs + 1):
     optimizer.zero_grad()
     y_pred = model(X_training, training_edge_index)
     loss = criterion(y_pred, y_training.argmax(dim=1))
     loss.backward()
     optimizer.step()
-    print(f'Epoch {epoch}: Loss: {loss.item()}')
+    if epoch % 250 == 0:
+        print(f'Epoch {epoch}: Loss: {loss.item()}')
 ################
