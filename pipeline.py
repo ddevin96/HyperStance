@@ -56,4 +56,5 @@ for epoch in range(1, epochs + 1):
     loss.backward()
     optimizer.step()
     print(f'Epoch {epoch}: Loss: {loss.item()}')
+    
 ################
