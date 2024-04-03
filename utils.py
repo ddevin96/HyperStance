@@ -1,4 +1,4 @@
-import os
+import os, shutil
 import pickle
 import pandas as pd
 import hypernetx as hnx
@@ -160,29 +160,32 @@ def process_MT_CSD(input_folder):
 
                     output_conversation_folder = output_folder + "/conversation"
                     counter_conversation = 0
-                    if not os.path.exists(output_conversation_folder + str(counter_conversation)):
-                        os.makedirs(output_conversation_folder + str(counter_conversation+1))
+                    # if not os.path.exists(output_conversation_folder + str(counter_conversation)):
+                    #     os.makedirs(output_conversation_folder + str(counter_conversation+1))
                     hm = {}
                     counter = 0
                     hgf_line = ""
                     hgf_he_starter = "1-1"
                     hgf_body = ""
                     for index, row in data.iterrows():
-                        if counter_conversation == '4':
-                            exit()
+                        # if counter_conversation == '4':
+                        #     exit()
                         # if row['id'] is convertable to int, it's first message in the conversation
                         if row['id'].isdigit():
                             if row['id'] != counter_conversation:
                                 # new conversation
                                 counter_conversation = row['id']
-                                if not os.path.exists(output_conversation_folder + str(counter_conversation)):
-                                    os.makedirs(output_conversation_folder + str(counter_conversation))
+                                real_count = int(counter_conversation)-1
+                                if not os.path.exists(output_conversation_folder + str(real_count)):
+                                    os.makedirs(output_conversation_folder + str(real_count))
                                 counter = 0
                                 hm = {}
                                 hgf_line = hgf_line[:-1]
-                                print(hgf_line)
+                                # print(hgf_line)
                                 hgf_body += hgf_line + "\n"
-                                with open(output_conversation_folder + str(counter_conversation) + "/hg.hgf", 'w') as f:
+                                with open(output_conversation_folder + str(real_count) + "/hg.hgf", 'w') as f:
+                                    # strip empty lines
+                                    hgf_body = os.linesep.join([s for s in hgf_body.splitlines() if s])
                                     f.write(hgf_body)
                                 if row['id'] not in hm:
                                     hm[row['id']] = counter
@@ -198,7 +201,7 @@ def process_MT_CSD(input_folder):
                                 if hgf_line != "" + str(hm[str(counter_conversation)]) + ",":
                                     hgf_line = hgf_line[:-1]
                                     hgf_body += hgf_line + "\n"
-                                    print(hgf_line)
+                                    # print(hgf_line)
                                     hgf_he_starter = row['id']
                                     hgf_line = "" + str(hm[str(counter_conversation)]) + ","
 
@@ -207,5 +210,7 @@ def process_MT_CSD(input_folder):
                             counter += 1
                         
                         hgf_line += str(hm[row['id']]) + ","
-                    exit()
+
+                    if os.path.isdir(output_conversation_folder + "0"):
+                        shutil.rmtree(output_conversation_folder + "0")
   
