@@ -2,6 +2,7 @@ import os
 import pickle
 import pandas as pd
 import hypernetx as hnx
+import json
 
 ### get_embeddings("Hello, my dog is cute", tokenizer, model)
 def get_embeddings(text, tokenizer, model):
@@ -137,3 +138,74 @@ def change_labels():
                         id_map['label_id'] = id_map['label'].apply(lambda x: annotations.index(x) if x in annotations else -1)
                         id_map = id_map.drop(columns=['label'])
                         id_map.to_csv('data/processed/' + subfolder + '/id_map.csv', index=False)
+
+
+### process MT_CSD data
+def process_MT_CSD(input_folder):
+    for subfolder in os.listdir(input_folder):
+        if os.path.isdir(input_folder + "/" + subfolder):
+            for file in os.listdir(input_folder + "/" + subfolder):
+                if file == "text.csv":
+                    data = pd.read_csv(input_folder + "/" + subfolder + "/text.csv")
+                    output_folder = input_folder + "/" + subfolder + "_processed"
+                    if not os.path.exists(output_folder):
+                        os.makedirs(output_folder)
+                    # read json file
+                    with open(input_folder + "/" + subfolder + "/train.json") as f:
+                        train_json = json.load(f)
+                    with open(input_folder + "/" + subfolder + "/test.json") as f:
+                        test_json = json.load(f)
+                    with open(input_folder + "/" + subfolder + "/valid.json") as f:
+                        valid_json = json.load(f)
+
+                    output_conversation_folder = output_folder + "/conversation"
+                    counter_conversation = 0
+                    if not os.path.exists(output_conversation_folder + str(counter_conversation)):
+                        os.makedirs(output_conversation_folder + str(counter_conversation+1))
+                    hm = {}
+                    counter = 0
+                    hgf_line = ""
+                    hgf_he_starter = "1-1"
+                    hgf_body = ""
+                    for index, row in data.iterrows():
+                        if counter_conversation == '4':
+                            exit()
+                        # if row['id'] is convertable to int, it's first message in the conversation
+                        if row['id'].isdigit():
+                            if row['id'] != counter_conversation:
+                                # new conversation
+                                counter_conversation = row['id']
+                                if not os.path.exists(output_conversation_folder + str(counter_conversation)):
+                                    os.makedirs(output_conversation_folder + str(counter_conversation))
+                                counter = 0
+                                hm = {}
+                                hgf_line = hgf_line[:-1]
+                                print(hgf_line)
+                                hgf_body += hgf_line + "\n"
+                                with open(output_conversation_folder + str(counter_conversation) + "/hg.hgf", 'w') as f:
+                                    f.write(hgf_body)
+                                if row['id'] not in hm:
+                                    hm[row['id']] = counter
+                                    counter += 1
+                                hgf_line = "" + str(hm[str(counter_conversation)]) + ","
+                                print(f"Conversation {counter_conversation}")
+                                continue
+
+                                # row['text] do something
+
+                        elif len(row['id'].split('-')) == 2:
+                            if row['id'] != hgf_he_starter:
+                                if hgf_line != "" + str(hm[str(counter_conversation)]) + ",":
+                                    hgf_line = hgf_line[:-1]
+                                    hgf_body += hgf_line + "\n"
+                                    print(hgf_line)
+                                    hgf_he_starter = row['id']
+                                    hgf_line = "" + str(hm[str(counter_conversation)]) + ","
+
+                        if row['id'] not in hm:
+                            hm[row['id']] = counter
+                            counter += 1
+                        
+                        hgf_line += str(hm[row['id']]) + ","
+                    exit()
+  
