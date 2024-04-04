@@ -144,73 +144,212 @@ def change_labels():
 def process_MT_CSD(input_folder):
     for subfolder in os.listdir(input_folder):
         if os.path.isdir(input_folder + "/" + subfolder):
-            for file in os.listdir(input_folder + "/" + subfolder):
-                if file == "text.csv":
-                    data = pd.read_csv(input_folder + "/" + subfolder + "/text.csv")
-                    output_folder = input_folder + "/" + subfolder + "_processed"
-                    if not os.path.exists(output_folder):
-                        os.makedirs(output_folder)
-                    # read json file
-                    with open(input_folder + "/" + subfolder + "/train.json") as f:
-                        train_json = json.load(f)
-                    with open(input_folder + "/" + subfolder + "/test.json") as f:
-                        test_json = json.load(f)
-                    with open(input_folder + "/" + subfolder + "/valid.json") as f:
-                        valid_json = json.load(f)
+            if input_folder + "/" + subfolder == "data/MT_CSD/Biden":
+                for file in os.listdir(input_folder + "/" + subfolder):
+                    if file == "text.csv":
+                        data = pd.read_csv(input_folder + "/" + subfolder + "/text.csv")
+                        output_folder = input_folder + "/" + subfolder + "_processed"
+                        if not os.path.exists(output_folder):
+                            os.makedirs(output_folder)
+                        # read json file
+                        with open(input_folder + "/" + subfolder + "/train.json") as f:
+                            train_json = json.load(f)
+                        with open(input_folder + "/" + subfolder + "/test.json") as f:
+                            test_json = json.load(f)
+                        with open(input_folder + "/" + subfolder + "/valid.json") as f:
+                            valid_json = json.load(f)
 
-                    output_conversation_folder = output_folder + "/conversation"
-                    counter_conversation = 0
-                    # if not os.path.exists(output_conversation_folder + str(counter_conversation)):
-                    #     os.makedirs(output_conversation_folder + str(counter_conversation+1))
-                    hm = {}
-                    counter = 0
-                    hgf_line = ""
-                    hgf_he_starter = "1-1"
-                    hgf_body = ""
-                    for index, row in data.iterrows():
-                        # if counter_conversation == '4':
-                        #     exit()
-                        # if row['id'] is convertable to int, it's first message in the conversation
-                        if row['id'].isdigit():
-                            if row['id'] != counter_conversation:
-                                # new conversation
-                                counter_conversation = row['id']
-                                real_count = int(counter_conversation)-1
-                                if not os.path.exists(output_conversation_folder + str(real_count)):
-                                    os.makedirs(output_conversation_folder + str(real_count))
-                                counter = 0
-                                hm = {}
-                                hgf_line = hgf_line[:-1]
-                                # print(hgf_line)
-                                hgf_body += hgf_line + "\n"
-                                with open(output_conversation_folder + str(real_count) + "/hg.hgf", 'w') as f:
-                                    # strip empty lines
-                                    hgf_body = os.linesep.join([s for s in hgf_body.splitlines() if s])
-                                    f.write(hgf_body)
+                        output_conversation_folder = output_folder + "/conversation"
+                        counter_conversation = 0
+                        # if not os.path.exists(output_conversation_folder + str(counter_conversation)):
+                        #     os.makedirs(output_conversation_folder + str(counter_conversation+1))
+                        hm = {}
+                        counter = 0
+                        hgf_line = ""
+                        hgf_he_starter = "1-1"
+                        hgf_body = ""
+                        for index, row in data.iterrows():
+                            # if counter_conversation == '4':
+                            #     exit()
+                            # if row['id'] is convertable to int, it's first message in the conversation
+                            if row['id'].isdigit():
+                                if row['id'] != counter_conversation:
+                                    # new conversation
+                                    counter_conversation = row['id']
+                                    real_count = int(counter_conversation)-1
+                                    if not os.path.exists(output_conversation_folder + str(real_count)):
+                                        os.makedirs(output_conversation_folder + str(real_count))
+                                    counter = 0
+                                    hm = {}
+                                    hgf_line = hgf_line[:-1]
+                                    # print(hgf_line)
+                                    hgf_body += hgf_line + "\n"
+                                    with open(output_conversation_folder + str(real_count) + "/hg.hgf", 'w') as f:
+                                        # strip empty lines
+                                        hgf_body = os.linesep.join([s for s in hgf_body.splitlines() if s])
+                                        f.write(hgf_body)
+                                    if row['id'] not in hm:
+                                        hm[row['id']] = counter
+                                        counter += 1
+                                    hgf_line = "" + str(hm[str(counter_conversation)]) + ","
+                                    print(f"Conversation {counter_conversation}")
+                                    continue
+
+                                    # row['text] do something
+
+                            elif len(row['id'].split('-')) == 2:
+                                if row['id'] != hgf_he_starter:
+                                    if hgf_line != "" + str(hm[str(counter_conversation)]) + ",":
+                                        hgf_line = hgf_line[:-1]
+                                        hgf_body += hgf_line + "\n"
+                                        # print(hgf_line)
+                                        hgf_he_starter = row['id']
+                                        hgf_line = "" + str(hm[str(counter_conversation)]) + ","
+
+                            if row['id'] not in hm:
+                                hm[row['id']] = counter
+                                counter += 1
+                            
+                            hgf_line += str(hm[row['id']]) + ","
+
+                        if os.path.isdir(output_conversation_folder + "0"):
+                            shutil.rmtree(output_conversation_folder + "0")
+  
+
+### process MT_CSD data
+def process_MT_CSD2(input_folder):
+    for subfolder in os.listdir(input_folder):
+        if os.path.isdir(input_folder + "/" + subfolder):
+            if input_folder + "/" + subfolder == "data/MT_CSD/Biden":
+                for file in os.listdir(input_folder + "/" + subfolder):
+                    if file == "text.csv":
+                        data = pd.read_csv(input_folder + "/" + subfolder + "/text.csv")
+                        output_folder = input_folder + "/" + subfolder + "_processed"
+                        if not os.path.exists(output_folder):
+                            os.makedirs(output_folder)
+                        # read json file
+                        # with open(input_folder + "/" + subfolder + "/train.json") as f:
+                        #     train_json = json.load(f)
+                        # with open(input_folder + "/" + subfolder + "/test.json") as f:
+                        #     test_json = json.load(f)
+                        # with open(input_folder + "/" + subfolder + "/valid.json") as f:
+                        #     valid_json = json.load(f)
+
+                        output_conversation_folder = output_folder + "/conversation"
+                        counter_conversation = 0
+                        # if not os.path.exists(output_conversation_folder + str(counter_conversation)):
+                        #     os.makedirs(output_conversation_folder + str(counter_conversation+1))
+
+                        hm = {}
+                        counter = 0
+                        vectors_depths = []
+                        he_by_depths = []
+                        increasing_depth = 1
+                        prev = "1"
+                        
+                        for index, row in data.iterrows():
+                            if row['id'].isdigit():
                                 if row['id'] not in hm:
                                     hm[row['id']] = counter
                                     counter += 1
-                                hgf_line = "" + str(hm[str(counter_conversation)]) + ","
-                                print(f"Conversation {counter_conversation}")
-                                continue
+                                counter_conversation += 1
+                                real_c = int(row['id'])
+                                
+                                if real_c != 1:
+                                    # real_c = real_c - 1
+                                    output_conversation_folder = output_folder + "/conversation" + prev
+                                    if not os.path.exists(output_conversation_folder):
+                                        os.makedirs(output_conversation_folder)
+                                    save_conversations(output_conversation_folder, hm, vectors_depths)
+                                    prev = str(row['id'])
+                                    hm = {}
+                                    counter = 0
+                                    he_by_depths = []
+                                    vectors_depths = []
+                                    increasing_depth = 1
 
-                                # row['text] do something
+                                if row['id'] not in hm:
+                                    hm[row['id']] = counter
+                                    counter += 1
+                                vectors_root = []
+                                vectors_root.append(hm[row['id']])
+                                vectors_depths.append(vectors_root)
+                                he_by_depths.append(vectors_root)
+                            else:
+                                l = len(row['id'].split('-'))
+                                if row['id'] not in hm:
+                                    hm[row['id']] = counter
+                                    counter += 1 
+                                if l > len(vectors_depths):
+                                    # new depth
+                                    vector_depth = []
+                                    vector_depth.append(hm[row['id']])
+                                    vectors_depths.append(vector_depth)
+                                else:
+                                    # same depth
+                                    vectors_depths[l-1].append(hm[row['id']])
 
-                        elif len(row['id'].split('-')) == 2:
-                            if row['id'] != hgf_he_starter:
-                                if hgf_line != "" + str(hm[str(counter_conversation)]) + ",":
-                                    hgf_line = hgf_line[:-1]
-                                    hgf_body += hgf_line + "\n"
-                                    # print(hgf_line)
-                                    hgf_he_starter = row['id']
-                                    hgf_line = "" + str(hm[str(counter_conversation)]) + ","
-
-                        if row['id'] not in hm:
-                            hm[row['id']] = counter
-                            counter += 1
+                                # original he building
+                                if len(he_by_depths) == 0 or l == 2:
+                                    # new branch of tree
+                                    he_vector = []
+                                    he_vector.append(hm[row['id']])
+                                    he_by_depths.append(he_vector)
+                                    increasing_depth = 1
+                                elif l > increasing_depth:
+                                    he_vector = []
+                                    he_vector.append(hm[row['id']])
+                                    # same branch of tree
+                                    l_he = len(he_by_depths)
+                                    he_by_depths[l_he-1].append(hm[row['id']])
+                                else:
+                                    he_by_depths[l-1].append(hm[row['id']])
                         
-                        hgf_line += str(hm[row['id']]) + ","
+                        # save last conversation
+                        output_conversation_folder = output_folder + "/conversation" + prev
+                        if not os.path.exists(output_conversation_folder):
+                            os.makedirs(output_conversation_folder)
+                        save_conversations(output_conversation_folder, hm, vectors_depths)
 
-                    if os.path.isdir(output_conversation_folder + "0"):
-                        shutil.rmtree(output_conversation_folder + "0")
-  
+
+def save_conversations(output_conversation_folder, hm, vectors_depths):
+    pivots = vectors_depths[1]
+    a = []
+    final_he = []
+    for index in range(0, len(pivots)):
+        pivot = pivots[index]
+        if index < len(pivots)-1:
+            next_pivot = pivots[index+1]
+        else:
+            next_pivot = len(hm)
+
+        for i in range(1, len(vectors_depths)):
+            aa = []
+            for j in range(0, len(vectors_depths[i])):
+                if vectors_depths[i][j] >= pivot and vectors_depths[i][j] < next_pivot:
+                    aa.append(vectors_depths[i][j])
+            if len(aa) > 0:
+                a.append(aa)
+        temp = []
+        for i in range(0, len(a)):
+            if i == 0:
+                final_he.append(a[i])
+                temp = a[i]
+            else:
+                new_list = temp + a[i]
+                temp = new_list
+                final_he.append(new_list)
+                            
+        a = []
+
+    with open(output_conversation_folder + "/hg2.hgf", 'w') as f:
+        for i in range(0, len(final_he)):
+            # TODO fix this -> should be the conversation id
+            f.write('0,')
+            s = final_he[i]
+            s.sort()
+            f.write(','.join(map(str, s)))
+            f.write('\n')
+
+    # if os.path.isdir(output_conversation_folder + "0"):
+    #     shutil.rmtree(output_conversation_folder + "0")
