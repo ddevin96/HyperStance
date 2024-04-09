@@ -6,6 +6,7 @@ import numpy as np
 import pickle
 from utils import *
 from sklearn.model_selection import train_test_split
+
 ################
 
 dataset_name = "Abortiondebate"
@@ -57,4 +58,5 @@ for epoch in range(1, epochs + 1):
     optimizer.step()
     if epoch % 250 == 0:
         print(f'Epoch {epoch}: Loss: {loss.item()}')
+
 ################
