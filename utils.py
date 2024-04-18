@@ -353,3 +353,38 @@ def save_conversations(output_conversation_folder, hm, vectors_depths):
 
     # if os.path.isdir(output_conversation_folder + "0"):
     #     shutil.rmtree(output_conversation_folder + "0")
+
+def generate_embs():
+    l = ["Biden", "Bitcoin", "SpaceX", "Tesla", "Trump"]
+    now = time.time()
+    model_name = 'bert-base-uncased'  # You can use other pre-trained BERT models as well
+    tokenizer = BertTokenizer.from_pretrained(model_name)
+    model = BertModel.from_pretrained(model_name)
+    print(f"Time taken to load model: {time.time()-now}")
+    # Move model to GPU
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+
+    for folder in l:
+        now = time.time()
+        text_embs = []
+        out = f"data/MT_CSD/{folder}"
+        print(f"Processing {folder}\n\n")
+        df = pd.read_csv(f"{out}/text.csv")
+        
+        for i in range(0, len(df)):
+            if i % 100 == 0:
+                print(f"Processed {i}/{len(df)} comments - Time taken: {time.time()-now:.2f}s")
+
+            t = str(df["text"][i])
+            t = t.lower()
+            inputs = tokenizer(t, truncation=True, max_length=512, return_tensors="pt").to(device)
+            # Get the outputs from the BERT model
+            with torch.no_grad():
+                outputs = model(**inputs)
+            # Get the embeddings (output of the [CLS] token)
+            embeddings = outputs.last_hidden_state[:, 0, :]
+            text_embs.append(embeddings)
+
+        with open(out + '/textembs.pkl', 'wb') as f:
+            pickle.dump(text_embs, f, pickle.HIGHEST_PROTOCOL)
