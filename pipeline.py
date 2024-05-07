@@ -9,36 +9,58 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import accuracy_score, f1_score
-
+import time
+import io
 ################
 
+class CPU_Unpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == 'torch.storage' and name == '_load_from_bytes':
+            return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
+        else:
+            return super().find_class(module, name)
+
 def main():
-    dataset_name = "Abortiondebate"
+    dataset_name = "sample4000"
 
-    with open(f"data/processed/{dataset_name}/textembs.pkl", "rb") as f:
-        textembs = pickle.load(f)
+    # with open(f"data/processed/{dataset_name}/textembs.pkl", "rb") as f:
+        # textembs = pickle.load(f)
+    files = os.listdir("/home/ddevin/test/data/embs")
+    files.sort()
+    textembs = []
+    now = time.time()
+    for file in files:
+        if file.endswith(".pkl"):
+            with open(f"/home/ddevin/test/data/embs/{file}", "rb") as f:
+                print(f"Loading {file} - {time.time() - now} seconds", flush=True)
+                # texts = pickle.load(f)
+                texts = CPU_Unpickler(f).load()
+                textembs.extend(texts)
 
-    X = torch.tensor(np.array([t.numpy().squeeze() for t in textembs]))
+    X = torch.tensor(np.array([t.cpu().numpy().squeeze() for t in textembs]))
 
     num_nodes = X.shape[0]
 
     # already sorted by timestamp
-    with open(f"data/processed/{dataset_name}/matrix.pkl", "rb") as f:
+    # with open(f"data/processed/{dataset_name}/matrix.pkl", "rb") as f:
+    now = time.time()
+    with open(f"/home/ddevin/test/data/complete/matrix.pkl", "rb") as f:
         incidence_matrix = pickle.load(f)
+    print(f"Loaded incidence matrix - {time.time() - now} seconds", flush=True)
 
-    labels = pd.read_csv(f"data/processed/{dataset_name}/id_map.csv")
-    labels = torch.tensor(labels['label_id'].values) + 1
-    labels = np.random.randint(0, 6, len(labels)) # Mock labels
+    # labels = pd.read_csv(f"data/processed/{dataset_name}/id_map.csv")
+    labels = pd.read_csv(f"/home/ddevin/test/data/complete/id_map.csv")
+    labels = torch.tensor(labels['label_id'].values)
 
-    # y = torch.eye(7)[labels] # Real y
-    y = torch.eye(6)[labels] # Mock y
-
+    y = torch.eye(3)[labels]
+    
     # train/test dataset - 80-20 ordered by timestamp without shuffling
     X_training, X_test, im_training, im_test, y_training, y_test = train_test_split(X, incidence_matrix, y, train_size=0.8, shuffle=False)
 
     # check if we have he with 0 nodes
     print(f"{(im_training.T.sum(axis=1) == 0).sum()} empty edges in training set")
     print(f"{(im_test.T.sum(axis=1) == 0).sum()} empty edges in test set")
+
     # Remove empty edges from both training e test set
     im_training = torch.tensor(im_training.T[(im_training.T.sum(axis=1) > 0)].T)
     im_test = torch.tensor(im_test.T[(im_test.T.sum(axis=1) > 0)].T)
@@ -67,7 +89,7 @@ def main():
                 y_true = y_test.argmax(dim=1)
                 acc = accuracy_score(y_true, y_pred) * 100
                 f1 = f1_score(y_true, y_pred, average='weighted') * 100
-                print(f'Epoch {epoch}: Training Loss: {loss.item()} - Test Loss: {test_loss.item():.2f} - Accuracy {acc:.2f} - F1 {f1:.2f}')
+                print(f'Epoch {epoch}: Training Loss: {loss.item()} - Test Loss: {test_loss.item():.2f} - Accuracy {acc:.2f} - F1 {f1:.2f}', flush=True)
                 model.eval()
 
     ################
