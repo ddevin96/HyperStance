@@ -24,19 +24,22 @@ class CPU_Unpickler(pickle.Unpickler):
             return super().find_class(module, name)
 
 def main():
-    task = Task.init(project_name="kitemmuorto", task_name="kitemmuorto", reuse_last_task_id=False)
+    task = Task.init(
+        project_name="Hyperstance", 
+        task_name="SDG", 
+        reuse_last_task_id=False)
 
     dataset_name = "sample4000"
 
     # with open(f"data/processed/{dataset_name}/textembs.pkl", "rb") as f:
         # textembs = pickle.load(f)
-    files = os.listdir("/home/ddevin/test/data/embs")
+    files = os.listdir("/data/ddevin/embs")
     files.sort()
     textembs = []
     now = time.time()
     for file in files:
         if file.endswith(".pkl"):
-            with open(f"/home/ddevin/test/data/embs/{file}", "rb") as f:
+            with open(f"/data/ddevin/embs/{file}", "rb") as f:
                 print(f"Loading {file} - {time.time() - now} seconds", flush=True)
                 # texts = pickle.load(f)
                 texts = CPU_Unpickler(f).load()
@@ -49,13 +52,14 @@ def main():
     # already sorted by timestamp
     # with open(f"data/processed/{dataset_name}/matrix.pkl", "rb") as f:
     now = time.time()
-    with open(f"/home/ddevin/test/data/complete/matrix.pkl", "rb") as f:
+    with open(f"/data/ddevin/complete/matrix.pkl", "rb") as f:
         incidence_matrix = pickle.load(f)
     print(f"Loaded incidence matrix - {time.time() - now} seconds", flush=True)
 
     # labels = pd.read_csv(f"data/processed/{dataset_name}/id_map.csv")
-    labels = pd.read_csv(f"/home/ddevin/test/data/complete/id_map.csv")
+    labels = pd.read_csv(f"/data/ddevin/complete/id_map.csv")
     labels = torch.tensor(labels['label_id'].values)
+    labels[labels == 3] = 2
 
     y = torch.eye(3)[labels]
     
@@ -84,18 +88,22 @@ def main():
     
     model = Model(X.shape[1], y.shape[1])
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=10e-6)
-    epochs = 1500
+    
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=10e-6) # 
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, weight_decay=10e-6)
+    epochs = 2000
     for epoch in range(1, epochs + 1):
         model.train()
         optimizer.zero_grad()
         y_pred = model(X_training, training_edge_index)
         loss = criterion(y_pred, y_training.argmax(dim=1))
+        
         loss.backward()
         optimizer.step()
         Logger.current_logger().report_scalar("Loss", "Training Loss", value=loss.item(), iteration=epoch)
         if epoch % 250 == 0:
             with torch.inference_mode():
+                model.eval()
                 y_pred = model(X, test_edge_index)
                 y_pred = y_pred[test_mask]
                 test_loss = criterion(y_pred, y_test.argmax(dim=1))
